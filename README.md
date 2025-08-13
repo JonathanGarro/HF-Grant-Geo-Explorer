@@ -1,58 +1,87 @@
-# GEG Active Portfolio Sunburst Chart
+# Hewlett Geographic Grant Distribution Explorer
 
-This project creates a sunburst chart visualization of the GEG (Global Engagement Group) active portfolio based on geographical hierarchies and monetary amounts.
+This project creates an interactive Streamlit application for visualizing the geographic distribution of grants in the Hewlett Foundation portfolio.
 
 ## Overview
 
-The script `sunburst_chart.py` reads data from `geg_active_portfolio.csv` and generates an interactive sunburst chart that visualizes the distribution of funds across different geographical entities. The chart is organized hierarchically, starting with US/International at the root, then continent, region, and country levels.
+The Streamlit app `app.py` allows users to upload grant data in CSV format and generates an interactive sunburst chart that visualizes the distribution of funds across different geographical entities. The chart is organized hierarchically, starting with US/International at the root, followed by regions, sub-regions, and countries.
 
 ## Requirements
 
 - Python 3.x
-- Required Python packages:
+- Required Python packages (see requirements.txt for specific versions):
+  - streamlit
   - pandas
   - plotly
   - numpy
+  - xlsxwriter
 
 ## Installation
 
 Install the required packages using pip:
 
 ```bash
-pip install pandas plotly numpy
+pip install -r requirements.txt
+```
+
+Or install the main packages individually:
+
+```bash
+pip install streamlit pandas plotly numpy xlsxwriter
 ```
 
 ## Usage
 
-1. Ensure that `geg_active_portfolio.csv` is in the same directory as the script.
-2. Run the script:
+1. Run the Streamlit app:
 
 ```bash
-python sunburst_chart.py
+streamlit run app.py
 ```
 
-3. The script will generate an HTML file named `geg_portfolio_sunburst.html` in the same directory.
-4. Open the HTML file in a web browser to view the interactive sunburst chart.
+2. The app will open in your default web browser.
+3. Upload your grant data CSV file using the file uploader in the sidebar.
+   - The CSV should contain columns for "Geographical Area Served: Geographical Area Served Name", "Geographic Entity", "Request: Amount", and "Request: Reference Number".
+4. The app will automatically process the data and display the interactive sunburst chart.
 
 ## Features
 
-- **Interactive Visualization**: The sunburst chart allows for interactive exploration of the data.
-- **Hierarchical Structure**: The data is organized in a hierarchical structure (US/International → Continent → Region → Country).
-- **Color Coding**: The chart uses color coding to represent the monetary amounts.
-- **Hover Information**: Hovering over segments displays detailed information about the geographical entity and the corresponding amount.
+- **Interactive Visualization**: The Streamlit app provides an interactive sunburst chart that allows users to click on segments to drill down into specific geographic areas.
+- **Hierarchical Structure**: The data is organized in a hierarchical structure (US/International → Region → Sub-region → Country/State).
+- **Dynamic Filtering**: Clicking on chart segments automatically filters the data table and summary statistics.
+- **Summary Statistics**: The app displays key metrics like total amount, average grant size, and number of geographic entities.
+- **Detailed Data Table**: A filterable and sortable table shows all grants in the selected geographic area.
+- **Quick Insights**: Automatically generated insights show top entities and program officers by grant amount.
+- **Hover Information**: Hovering over segments displays detailed information including amount, number of grants, and percentage of total.
 
 ## Data Structure
 
-The script processes the following columns from the CSV file:
-- "Geographical Area Served: Geographical Area Served Name" (geo_id)
-- "Geographic Entity" (geographic_entity)
-- "Request: Amount" (amount)
-- "Request: PO" (po)
-- "Request: Reference Number" (reference_number)
+The app processes the following columns from the uploaded CSV file:
+- "Geographical Area Served: Geographical Area Served Name"
+- "Geographic Entity"
+- "Request: Amount"
+- "Request: PO"
+- "Request: Reference Number"
 
-## Customization
+The app uses built-in UN M49 geographic classification data to automatically categorize countries and regions into a consistent hierarchy.
 
-You can customize the chart by modifying the following parameters in the script:
-- Color scale: Change `color_continuous_scale='RdBu'` to use a different color palette.
-- Title: Modify the `title` parameter in the `px.sunburst()` function.
-- Layout: Adjust the `fig.update_layout()` parameters to change margins, colorbar, etc.
+## Geographic Classification
+
+The app uses a comprehensive geographic classification system:
+
+- **US Data**: Organized by regions (South, Northeast, West, Midwest, Territories) and states
+- **International Data**: Follows UN M49 standard with:
+  - Regions (Africa, Americas, Asia, Europe, Oceania)
+  - Sub-regions (e.g., Eastern Africa, Western Africa, Southern Asia)
+  - Countries
+
+## Getting Started
+
+1. **Prepare Your Data**:
+   - Create a report in the GMS of type: Geographical Areas Served with Request
+   - Ensure it contains the required columns mentioned in the Data Structure section
+   - Export the file as a CSV
+
+2. **Run the App and Upload**:
+   - Launch the app using the command in the Usage section
+   - Upload your CSV file using the sidebar uploader
+   - Explore the interactive visualization
