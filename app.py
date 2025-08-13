@@ -546,7 +546,7 @@ def to_excel(df):
 # streamlit App
 def main():
     st.title("Hewlett Geographic Grant Distribution Explorer")
-    st.markdown("*Interactive visualization designed to explore the distribution of grants across geographic hierarchies. Code by Hewlett Data Officer [Jonathan Garro](https://github.com/jonathangarro).*")
+    st.markdown("*Interactive visualization designed to explore the distribution of grants across geographic hierarchies. Code by Hewlett Data Officer [Jonathan Garro](https://github.com/jonathangarro). See the readme in the repo for caveats about this data.*")
 
     # Sidebar for file upload
     st.sidebar.header("📁 Data Upload")
