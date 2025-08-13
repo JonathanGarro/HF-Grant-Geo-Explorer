@@ -6,7 +6,7 @@ from plotly.subplots import make_subplots
 import numpy as np
 from io import BytesIO
 
-# Set page configuration
+# page config
 st.set_page_config(
     page_title="Geographic Grant Distribution",
     page_icon="🌍",
@@ -17,10 +17,11 @@ st.set_page_config(
 @st.cache_data
 def get_m49_country_mapping():
     """
-    Hardcoded UN M49 geographic classification mapping
+    Hardcoded UN M49 geographic classification mapping.
+    Previously used a separate file but I switched to this hardcoded mapping to avoid requiring users to upload a file.
     """
     return {
-        # Africa
+        # africa
         'Algeria': {'region': 'Africa', 'sub_region': 'Northern Africa', 'intermediate_region': None},
         'Angola': {'region': 'Africa', 'sub_region': 'Sub-Saharan Africa', 'intermediate_region': 'Middle Africa'},
         'Benin': {'region': 'Africa', 'sub_region': 'Sub-Saharan Africa', 'intermediate_region': 'Western Africa'},
@@ -77,7 +78,7 @@ def get_m49_country_mapping():
         'Zambia': {'region': 'Africa', 'sub_region': 'Sub-Saharan Africa', 'intermediate_region': 'Eastern Africa'},
         'Zimbabwe': {'region': 'Africa', 'sub_region': 'Sub-Saharan Africa', 'intermediate_region': 'Eastern Africa'},
 
-        # Americas
+        # americas
         'Antigua and Barbuda': {'region': 'Americas', 'sub_region': 'Latin America and the Caribbean', 'intermediate_region': 'Caribbean'},
         'Argentina': {'region': 'Americas', 'sub_region': 'Latin America and the Caribbean', 'intermediate_region': 'South America'},
         'Bahamas': {'region': 'Americas', 'sub_region': 'Latin America and the Caribbean', 'intermediate_region': 'Caribbean'},
@@ -114,7 +115,7 @@ def get_m49_country_mapping():
         'Uruguay': {'region': 'Americas', 'sub_region': 'Latin America and the Caribbean', 'intermediate_region': 'South America'},
         'Venezuela': {'region': 'Americas', 'sub_region': 'Latin America and the Caribbean', 'intermediate_region': 'South America'},
 
-        # Asia
+        # asia
         'Afghanistan': {'region': 'Asia', 'sub_region': 'Southern Asia', 'intermediate_region': None},
         'Armenia': {'region': 'Asia', 'sub_region': 'Western Asia', 'intermediate_region': None},
         'Azerbaijan': {'region': 'Asia', 'sub_region': 'Western Asia', 'intermediate_region': None},
@@ -165,7 +166,7 @@ def get_m49_country_mapping():
         'Vietnam': {'region': 'Asia', 'sub_region': 'South-eastern Asia', 'intermediate_region': None},
         'Yemen': {'region': 'Asia', 'sub_region': 'Western Asia', 'intermediate_region': None},
 
-        # Europe
+        # europe
         'Albania': {'region': 'Europe', 'sub_region': 'Southern Europe', 'intermediate_region': None},
         'Andorra': {'region': 'Europe', 'sub_region': 'Southern Europe', 'intermediate_region': None},
         'Austria': {'region': 'Europe', 'sub_region': 'Western Europe', 'intermediate_region': None},
@@ -213,7 +214,7 @@ def get_m49_country_mapping():
         'England': {'region': 'Europe', 'sub_region': 'Northern Europe', 'intermediate_region': None},
         'Vatican City': {'region': 'Europe', 'sub_region': 'Southern Europe', 'intermediate_region': None},
 
-        # Oceania
+        # oceania
         'Australia': {'region': 'Oceania', 'sub_region': 'Australia and New Zealand', 'intermediate_region': None},
         'Fiji': {'region': 'Oceania', 'sub_region': 'Melanesia', 'intermediate_region': None},
         'Kiribati': {'region': 'Oceania', 'sub_region': 'Micronesia', 'intermediate_region': None},
@@ -236,13 +237,13 @@ def load_and_process_data(grants_file):
     Load the grant data and build the hierarchical structure using hardcoded M49 data
     """
 
-    # Load grant data
     grants_df = pd.read_csv(grants_file)
 
-    # Use hardcoded M49 mapping
+    # use hardcoded M49 mapping
     country_mapping = get_m49_country_mapping()
 
     # US states with regional classification
+    # this might require some tweaks based on how teams think about regions
     us_regions = {
         'South': [
             'Alabama', 'Arkansas', 'Delaware', 'Florida', 'Georgia', 'Kentucky',
@@ -268,23 +269,22 @@ def load_and_process_data(grants_file):
         ]
     }
 
-    # Create reverse mapping: state -> region
+    # create reverse mapping state > region
     state_to_region = {}
     for region, states in us_regions.items():
         for state in states:
             state_to_region[state] = region
 
-    # All US states and territories
+    # US states and territories
     all_us_entities = [state for states in us_regions.values() for state in states]
 
-    # Process each grant to build hierarchy
+    # process each grant to build hierarchy
     categorized_grants = []
 
     for _, row in grants_df.iterrows():
         entity = row['Geographic Entity']
         amount = row['Request: Amount'] or 0
 
-        # Determine hierarchy
         if entity == 'United States' or entity in all_us_entities:
             # US branch
             if entity == 'United States':
@@ -305,11 +305,11 @@ def load_and_process_data(grants_file):
                     'level4': level4_name
                 }
         else:
-            # International branch
+            # international branch
             m49_info = country_mapping.get(entity)
 
             if m49_info and pd.notna(m49_info['region']):
-                # Recognized country
+                # recognized country
                 hierarchy = {
                     'level1': 'International',
                     'level2': m49_info['region'],
@@ -317,7 +317,7 @@ def load_and_process_data(grants_file):
                     'level4': entity
                 }
             else:
-                # Regional or special entity
+                # regional or special entity
                 region = 'Other'
                 sub_region = None
 
@@ -336,7 +336,7 @@ def load_and_process_data(grants_file):
                 elif entity in ['International', 'Developing Countries']:
                     region = 'Global/Special'
 
-                # Avoid redundancy
+                # plotly wants to duplicate hierarchies sometimes, this avoids that
                 if sub_region and sub_region == entity:
                     level4_name = None
                 elif sub_region:
@@ -362,12 +362,12 @@ def load_and_process_data(grants_file):
 @st.cache_data
 def build_plotly_hierarchy(df):
     """
-    Convert the hierarchical data to Plotly sunburst format
+    Convert the hierarchical data to Plotly sunburst format. See API documentation for more details.
     """
 
     hierarchy_data = []
 
-    # Level 1: US vs International
+    # level 1: US vs international
     level1_groups = df.groupby('level1').agg({
         'amount': 'sum',
         'Request: Reference Number': 'count'
@@ -382,7 +382,7 @@ def build_plotly_hierarchy(df):
             'grant_count': row['Request: Reference Number']
         })
 
-    # Level 2: Regions/States
+    # level 2: regions and states
     level2_groups = df.groupby(['level1', 'level2']).agg({
         'amount': 'sum',
         'Request: Reference Number': 'count'
@@ -398,7 +398,7 @@ def build_plotly_hierarchy(df):
                 'grant_count': row['Request: Reference Number']
             })
 
-    # Level 3: Sub-regions
+    # level 3: sub-regions
     level3_groups = df.groupby(['level1', 'level2', 'level3']).agg({
         'amount': 'sum',
         'Request: Reference Number': 'count'
@@ -414,7 +414,7 @@ def build_plotly_hierarchy(df):
                 'grant_count': row['Request: Reference Number']
             })
 
-    # Level 4: Countries/States
+    # level 4: countries/states
     level4_groups = df.groupby(['level1', 'level2', 'level3', 'level4']).agg({
         'amount': 'sum',
         'Request: Reference Number': 'count'
@@ -437,7 +437,7 @@ def create_sunburst_chart(hierarchy_df, grants_df):
     Create the interactive Plotly sunburst chart
     """
 
-    # Create custom hover text
+    # hover text
     hover_text = []
     for _, row in hierarchy_df.iterrows():
         percentage = (row['values'] / grants_df['amount'].sum()) * 100
@@ -447,7 +447,7 @@ def create_sunburst_chart(hierarchy_df, grants_df):
         text += f"Share: {percentage:.1f}%"
         hover_text.append(text)
 
-    # Create the sunburst chart
+    # sunburst chart
     fig = go.Figure(go.Sunburst(
         ids=hierarchy_df['ids'],
         labels=hierarchy_df['labels'],
@@ -460,7 +460,7 @@ def create_sunburst_chart(hierarchy_df, grants_df):
         insidetextorientation='radial'
     ))
 
-    # Update layout for much larger chart
+    # custom chart config to increase size
     fig.update_layout(
         title={
             'text': f'Geographic Grant Distribution<br><span style="font-size: 24px; color: #27ae60;">Total: ${grants_df["amount"].sum():,.0f}</span>',
@@ -483,10 +483,10 @@ def filter_data_by_selection(df, selected_path):
     if not selected_path:
         return df
 
-    # Parse the selected path
+    # parse the selected path
     path_parts = selected_path.split('/')
 
-    # Build filter conditions
+    # filter conditions
     conditions = pd.Series([True] * len(df))
 
     if len(path_parts) >= 1 and path_parts[0]:
@@ -534,14 +534,16 @@ def create_summary_stats(df):
 
 def to_excel(df):
     """
-    Convert dataframe to Excel for download
+    Convert dataframe to Excel for download.
+    Not sure we need to keep this as user is providing raw data and streamlit isnt transforming anything
+    TODO: Decide on excel output
     """
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, sheet_name='Filtered_Grants', index=False)
     return output.getvalue()
 
-# Main Streamlit App
+# streamlit App
 def main():
     st.title("Hewlett Geographic Grant Distribution Explorer")
     st.markdown("*Interactive visualization designed to explore the distribution of grants across geographic hierarchies. Code by Hewlett Data Officer [Jonathan Garro](https://github.com/jonathangarro).*")
@@ -571,19 +573,19 @@ def main():
 
     if grants_file is not None:
         try:
-            # Load and process data
+            # load and process data
             with st.spinner('Processing data...'):
                 processed_df = load_and_process_data(grants_file)
                 hierarchy_df = build_plotly_hierarchy(processed_df)
 
-            # Initialize session state for selections
+            # initialize session state for selections
             if 'selected_path' not in st.session_state:
                 st.session_state.selected_path = None
 
-            # Create and display the sunburst chart - full width
+            # create and display the sunburst chart - full width
             fig = create_sunburst_chart(hierarchy_df, processed_df)
 
-            # Display chart with click handling - full container width
+            # display chart with click handling - full container width
             selected_data = st.plotly_chart(
                 fig,
                 use_container_width=True,
@@ -591,22 +593,21 @@ def main():
                 selection_mode="points"
             )
 
-            # Handle selection
             if selected_data and selected_data['selection']['points']:
-                # Get the selected point
+                # get the selected point
                 point = selected_data['selection']['points'][0]
                 selected_id = point.get('id', '')
                 st.session_state.selected_path = selected_id
 
-                # Display selection info as a banner
-                st.success(f"🎯 **Selected:** {selected_id.split('/')[-1]} | **Path:** {' → '.join(selected_id.split('/'))}")
+                # display selection info as a banner
+                st.success(f"**Selected:** {selected_id.split('/')[-1]} | **Path:** {' → '.join(selected_id.split('/'))}")
 
-                # Add clear selection button
+                # add clear selection button
                 if st.button("🔄 Clear Selection", type="secondary"):
                     st.session_state.selected_path = None
                     st.rerun()
 
-            # Filter data based on selection
+            # filter data based on selection
             if st.session_state.selected_path:
                 filtered_df = filter_data_by_selection(processed_df, st.session_state.selected_path)
                 section_title = f"Grants in: {st.session_state.selected_path.split('/')[-1]}"
@@ -614,54 +615,53 @@ def main():
                 filtered_df = processed_df
                 section_title = "All Grants"
 
-            # Add visual separator
             st.markdown("---")
 
-            # Display summary statistics
+            # summary stats
             st.subheader(f"Summary Statistics - {section_title}")
             create_summary_stats(filtered_df)
 
-            # Display filtered data table
+            # filtered data table
             st.subheader(f"Grant Details - {section_title}")
 
-            # Prepare display columns
+            # prepare display columns
             display_columns = [
                 'Geographic Entity', 'Request: Amount', 'Request: PO',
                 'Request: Reference Number', 'level1', 'level2', 'level3', 'level4'
             ]
 
-            # Rename columns for better display
+            # rename columns for better display
             display_df = filtered_df[display_columns].copy()
             display_df.columns = [
                 'Geographic Entity', 'Amount ($)', 'Program Officer',
                 'Reference Number', 'Level 1', 'Level 2', 'Level 3', 'Level 4'
             ]
 
-            # Format amount column
+            # format amount column
             display_df['Amount ($)'] = display_df['Amount ($)'].apply(lambda x: f"${x:,.0f}")
 
-            # Display the table
+            # display the table
             st.dataframe(
                 display_df,
                 use_container_width=True,
                 hide_index=True
             )
 
-            # Additional insights
+            # additional insights
             if len(filtered_df) > 0:
                 st.subheader("Quick Insights")
 
                 col1, col2 = st.columns(2)
 
                 with col1:
-                    # Top entities by amount
+                    # top entities by amount
                     top_entities = filtered_df.groupby('Geographic Entity')['amount'].sum().sort_values(ascending=False).head(5)
                     st.write("**Top 5 Entities by Amount:**")
                     for entity, amount in top_entities.items():
                         st.write(f"• {entity}: ${amount:,.0f}")
 
                 with col2:
-                    # Program officer distribution
+                    # PO distribution
                     po_distribution = filtered_df.groupby('Request: PO')['amount'].sum().sort_values(ascending=False).head(5)
                     st.write("**Top 5 Program Officers by Amount:**")
                     for po, amount in po_distribution.items():
@@ -672,7 +672,7 @@ def main():
             st.write("Please make sure your files are in the correct format.")
 
     else:
-        # Show instructions when no files are uploaded
+        # show instructions when no files are uploaded
         st.info("Upload grant data CSV file in the sidebar to begin.")
 
         st.subheader("📋 Required File")
@@ -690,11 +690,11 @@ def main():
 
 if __name__ == "__main__":
     try:
-        # Check if we're running in Streamlit
+        # check if we're running in Streamlit
         import streamlit as st
         main()
     except ImportError:
-        print("❌ Streamlit not installed. Install with: pip install streamlit")
+        print("Streamlit not installed. Install with: pip install streamlit")
     except Exception as e:
-        print("❌ This is a Streamlit app. Run with: streamlit run app.py")
+        print("This is a Streamlit app. Run with: streamlit run app.py")
         print(f"Error: {e}")
